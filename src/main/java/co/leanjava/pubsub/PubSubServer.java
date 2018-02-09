@@ -13,7 +13,7 @@ import io.netty.handler.logging.LoggingHandler;
  */
 public class PubSubServer {
 
-    private static final int PORT = Integer.getInteger("port", 8080);
+    private static final int PORT = Integer.getInteger("port", 9080);
 
     public static void main(String[] args) throws Exception {
 
@@ -24,7 +24,7 @@ public class PubSubServer {
             b.group(bossGroup, workerGroup)
                     .channel(NioServerSocketChannel.class)
                     .handler(new LoggingHandler(LogLevel.INFO))
-                    .childHandler(new WebSocketServerInitializer(sslCtx));
+                    .childHandler(new PubSubServerInitializer());
 
             Channel ch = b.bind(PORT).sync().channel();
             ch.closeFuture().sync();

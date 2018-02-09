@@ -22,7 +22,6 @@ public class PubSubServerInitializer extends ChannelInitializer<SocketChannel> {
                 .addLast(new HttpObjectAggregator(65536))
                 .addLast(new WebSocketServerCompressionHandler())
                 .addLast(new WebSocketServerProtocolHandler("/", null, true))
-                .addLast()
-
+                .addLast(new WebSocketMessageHandler());
     }
 }
