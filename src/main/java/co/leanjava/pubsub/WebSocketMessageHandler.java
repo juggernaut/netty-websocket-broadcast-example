@@ -23,7 +23,9 @@ public class WebSocketMessageHandler extends SimpleChannelInboundHandler<WebSock
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, WebSocketFrame frame) throws Exception {
         if (frame instanceof TextWebSocketFrame) {
-            LOGGER.info("Received text frame {}", ((TextWebSocketFrame) frame).text());
+            final String text = ((TextWebSocketFrame) frame).text();
+            LOGGER.info("Received text frame {}", text);
+            allChannels.forEach(c -> c.writeAndFlush(frame));
         } else {
             throw new UnsupportedOperationException("Invalid websocket frame received");
         }
