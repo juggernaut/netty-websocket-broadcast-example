@@ -1,14 +1,13 @@
 package co.leanjava.pubsub;
 
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.*;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.util.concurrent.GlobalEventExecutor;
+import io.netty.util.concurrent.Promise;
+import io.netty.util.concurrent.PromiseCombiner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,6 +16,9 @@ import org.slf4j.LoggerFactory;
  */
 public class WebSocketMessageHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
 
+    public WebSocketMessageHandler() {
+        super(false);
+    }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketMessageHandler.class);
 
@@ -27,17 +29,37 @@ public class WebSocketMessageHandler extends SimpleChannelInboundHandler<WebSock
         if (frame instanceof TextWebSocketFrame) {
             final String text = ((TextWebSocketFrame) frame).text();
             LOGGER.info("Received text frame {}", text);
+
+            PromiseCombiner promiseCombiner = new PromiseCombiner();
             allChannels.stream()
                     .filter(c -> c != ctx.channel())
                     //.forEach(c -> c.writeAndFlush(frame.copy()));
-                    .forEach(c -> c.writeAndFlush(frame).addListener(new ChannelFutureListener() {
-                        @Override
-                        public void operationComplete(ChannelFuture future) throws Exception {
-                            if (!future.isSuccess()) {
-                                LOGGER.info("Failed to write to channel: {}", future.cause());
+                    .forEach(c -> {
+                        frame.retain();
+                        promiseCombiner.add(c.writeAndFlush(frame.duplicate()).addListener(new ChannelFutureListener() {
+                            @Override
+                            public void operationComplete(ChannelFuture future) throws Exception {
+                                if (!future.isSuccess()) {
+                                    LOGGER.info("Failed to write to channel: {}", future.cause());
+                                }
                             }
-                        }
-                    }));
+                        }));
+                    });
+
+            Promise aggPromise = ctx.newPromise();
+            promiseCombiner.finish(aggPromise);
+
+            aggPromise.addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture channelFuture) throws Exception {
+                    if (frame.release()) {
+                        LOGGER.debug("WebSocket frame successfully deallocated");
+                    } else {
+                        LOGGER.warn("WebSocket frame leaked!");
+                    }
+                }
+            });
+
         } else {
             throw new UnsupportedOperationException("Invalid websocket frame received");
         }
