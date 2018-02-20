@@ -1,5 +1,7 @@
 package co.leanjava.pubsub;
 
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.group.ChannelGroup;
@@ -25,7 +27,17 @@ public class WebSocketMessageHandler extends SimpleChannelInboundHandler<WebSock
         if (frame instanceof TextWebSocketFrame) {
             final String text = ((TextWebSocketFrame) frame).text();
             LOGGER.info("Received text frame {}", text);
-            allChannels.forEach(c -> c.writeAndFlush(frame));
+            allChannels.stream()
+                    .filter(c -> c != ctx.channel())
+                    //.forEach(c -> c.writeAndFlush(frame.copy()));
+                    .forEach(c -> c.writeAndFlush(frame).addListener(new ChannelFutureListener() {
+                        @Override
+                        public void operationComplete(ChannelFuture future) throws Exception {
+                            if (!future.isSuccess()) {
+                                LOGGER.info("Failed to write to channel: {}", future.cause());
+                            }
+                        }
+                    }));
         } else {
             throw new UnsupportedOperationException("Invalid websocket frame received");
         }

@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Websocket broadcast test</title>
+    <script type="text/javascript">
+
+        ws = new WebSocket("ws://localhost:9080");
+        ws.onmessage = function(event) {
+            console.log("Received data: " + event.data);
+        };
+    </script>
+</head>
+<body>
+
+</body>
+</html>
