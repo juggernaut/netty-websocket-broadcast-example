@@ -11,7 +11,7 @@ import io.netty.handler.logging.LoggingHandler;
 /**
  * @author ameya
  */
-public class PubSubServer {
+public class BroadcastServer {
 
     private static final int PORT = Integer.getInteger("port", 9080);
 
@@ -24,7 +24,7 @@ public class PubSubServer {
             b.group(bossGroup, workerGroup)
                     .channel(NioServerSocketChannel.class)
                     .handler(new LoggingHandler(LogLevel.INFO))
-                    .childHandler(new PubSubServerInitializer());
+                    .childHandler(new BroadcastServerInitializer());
 
             Channel ch = b.bind(PORT).sync().channel();
             ch.closeFuture().sync();

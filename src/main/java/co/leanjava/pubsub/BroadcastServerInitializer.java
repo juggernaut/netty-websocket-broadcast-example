@@ -11,7 +11,7 @@ import io.netty.handler.codec.http.websocketx.extensions.compression.WebSocketSe
 /**
  * @author ameya
  */
-public class PubSubServerInitializer extends ChannelInitializer<SocketChannel> {
+public class BroadcastServerInitializer extends ChannelInitializer<SocketChannel> {
 
     @Override
     protected void initChannel(SocketChannel channel) throws Exception {
